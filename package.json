@@ -1,0 +1,26 @@
+{
+  "name": "gmail-android-replica",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Front-end replica of the Gmail Android app built with React, Vite and Tailwind CSS. School project demo — all data is fictional mock data, no backend, no real email.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5.8.0",
+    "vite": "^7.0.0"
+  }
+}

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#F8FAFD" />
+    <meta
+      name="description"
+      content="Front-end replica of the Gmail Android app. School project demo — all data is fictional mock data held in the browser only. No backend, no real email, no tracking."
+    />
+    <title>Gmail</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/fonts/roboto.css" />
+    <link rel="stylesheet" href="/fonts/material-symbols.css" />
+    <script>
+      // Never render raw ligature words if the icon font somehow fails to load.
+      document.fonts.ready.then(() => {
+        if (!document.fonts.check("24px 'Material Symbols Rounded'")) {
+          document.documentElement.classList.add('fonts-missing');
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
