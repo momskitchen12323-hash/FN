@@ -3,8 +3,9 @@ import type { Category } from '../types/email';
 
 const TABS: { key: Category; icon: string; label: string }[] = [
   { key: 'primary', icon: 'inbox', label: 'Primary' },
-  { key: 'social', icon: 'group', label: 'Social' },
   { key: 'promotions', icon: 'sell', label: 'Promotions' },
+  { key: 'social', icon: 'group', label: 'Social' },
+  { key: 'updates', icon: 'info', label: 'Updates' },
 ];
 
 interface CategoryTabsProps {

@@ -206,6 +206,11 @@ html.fonts-missing .msr {
   gap: 6px;
   padding: 10px 6px 10px 8px;
   user-select: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cat-tabs::-webkit-scrollbar {
+  display: none;
 }
 .cat-tab {
   display: flex;
@@ -221,6 +226,7 @@ html.fonts-missing .msr {
   font-weight: 500;
   cursor: pointer;
   flex-shrink: 0;
+  white-space: nowrap;
   transition: background-color 0.15s ease;
 }
 .cat-tab:active {
@@ -268,6 +274,51 @@ html.fonts-missing .msr {
   padding: 0 0 152px;
   list-style: none;
 }
+
+/* Attachment chips inside list rows (Gmail-style pills) */
+.email-row__chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 3px;
+  overflow: hidden;
+}
+.att-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(138, 180, 248, 0.25) ?;
+  background: #e8eaed;
+  color: #444746;
+  font-size: 11px;
+  max-width: 130px;
+}
+.att-chip__icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: #ea4335;
+}
+.att-chip__badge {
+  position: absolute;
+  inset: auto;
+  display: none;
+}
+.att-chip__name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.att-chip--more {
+  font-weight: 500;
+}
+
 .email-row {
   display: flex;
   align-items: flex-start;

@@ -1,6 +1,22 @@
 export type Folder = 'inbox' | 'sent';
 
-export type Category = 'primary' | 'social' | 'promotions';
+export type Category = 'primary' | 'promotions' | 'social' | 'updates' | 'none';
+
+export interface Attachment {
+  name: string;
+  size?: string;
+  type?: string;
+}
+
+/** One message inside a Gmail conversation thread. */
+export interface ThreadMessage {
+  fromName: string;
+  fromEmail?: string;
+  date?: string;
+  body?: string;
+  attachments?: Attachment[];
+  avatarBg?: string;
+}
 
 export interface Account {
   name: string;
@@ -11,22 +27,22 @@ export interface Email {
   id: string;
   folder: Folder;
   category: Category;
-  /** Sender display name (inbox mail). */
+  /** Row display name (sender for inbox, recipient for sent). */
   fromName: string;
-  fromEmail: string;
-  /** Recipient display name (used for Sent rows). */
+  fromEmail?: string;
   toName: string;
-  toEmail: string;
+  toEmail?: string;
   subject: string;
   snippet: string;
-  /** Full message body. Paragraphs separated by blank lines; simple "-" list lines are preserved. */
-  body: string;
-  /** Compact list date, e.g. "10:42 AM", "Yesterday", "Oct 8". */
-  date: string;
+  /** True when the thread carries the CSV-style attachment chips in the row. */
+  attachments?: Attachment[];
+  /** Full conversation, in chronological order. `body` is a fallback for single-message mail. */
+  messages: ThreadMessage[];
+  /** Compact list date, e.g. "10:42 AM". */
+  date?: string;
   /** Fuller timestamp for the detail header, e.g. "Sun, 11 Oct at 10:42". */
-  fullDate: string;
+  fullDate?: string;
   unread: boolean;
   starred: boolean;
-  /** Deterministic avatar background color. */
   avatarColor: string;
 }

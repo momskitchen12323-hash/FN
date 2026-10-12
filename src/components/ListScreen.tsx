@@ -25,7 +25,7 @@ interface ListScreenProps {
 export function ListScreen({ folder, emails, onOpenEmail, onToggleStar, onOpenDrawer, onCompose }: ListScreenProps) {
   const [params, setParams] = useSearchParams();
   const raw = params.get('tab');
-  const category: Category = folder === 'sent' || (raw !== 'social' && raw !== 'promotions') ? 'primary' : raw;
+  const category: Category = folder === 'sent' || (raw !== 'social' && raw !== 'promotions' && raw !== 'updates') ? 'primary' : raw;
 
   useDocumentTitle(folder === 'sent' ? 'Sent' : 'Inbox');
 
@@ -38,7 +38,7 @@ export function ListScreen({ folder, emails, onOpenEmail, onToggleStar, onOpenDr
   }, [emails, folder, category]);
 
   const unreadByCategory = useMemo(() => {
-    const counts: Record<Category, number> = { primary: 0, social: 0, promotions: 0 };
+    const counts: Record<Category, number> = { primary: 0, promotions: 0, social: 0, updates: 0, none: 0 };
     for (const e of emails) {
       if (e.folder === 'inbox' && e.unread) counts[e.category] += 1;
     }
