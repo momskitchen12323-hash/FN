@@ -77,3 +77,37 @@ export function longAgo(d: Date | null, fallback = ''): string {
   const years = Math.round(months / 12);
   return `${years} year${years === 1 ? '' : 's'} ago`;
 }
+
+/** Compact thread-row date ("21 Jun", "21 Jun 2026"). */
+export function compactStamp(stamp?: string): string {
+  const parsed = parseStamp(stamp);
+  if (parsed) return compactDate(parsed);
+  return (stamp || '').split(' at ')[0].replace(/, .*$/, '');
+}
+
+/**
+ * Gmail hides quoted history behind a "⋯" toggle. Split a plain-text body at
+ * the first quote marker ("On … wrote:" or "-----Original …-----").
+ */
+export function splitQuotedBody(body: string): { visible: string; quoted: string } {
+  const normalized = (body || '').replace(/\r\n/g, '\n');
+  const lines = normalized.split('\n');
+  const index = lines.findIndex((line) => {
+    const t = line.trim();
+    return /^On .+ wrote:$/.test(t) || /^-{2,}\s*Original\s+.+$/i.test(t);
+  });
+  if (index <= 0) return { visible: index === 0 ? '' : normalized, quoted: index === 0 ? normalized : '' };
+  return {
+    visible: lines.slice(0, index).join('\n'),
+    quoted: lines.slice(index).join('\n'),
+  };
+}
+
+/** Collapse scrape whitespace into paragraphs (no giant blank runs). */
+export function toParagraphs(text: string): string[] {
+  return text
+    .replace(/\r\n/g, '\n')
+    .split(/\n{2,}/)
+    .map((p) => p.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim())
+    .filter(Boolean);
+}

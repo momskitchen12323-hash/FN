@@ -1,10 +1,10 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { Email, ThreadMessage } from '../types/email';
 import { MaterialIcon } from './MaterialIcon';
 import { ProfileAvatar } from './ProfileAvatar';
 import { BottomNav } from './BottomNav';
 import { useScrollHide } from '../hooks/lists';
-import { parseStamp, longAgo } from '../utils/format';
+import { parseStamp, longAgo, compactStamp, splitQuotedBody, toParagraphs } from '../utils/format';
 import { ACCOUNT, ACCOUNT_COLOR } from '../data/emails';
 
 interface EmailDetailProps {
@@ -45,6 +45,40 @@ function attachmentKind(name: string): 'pdf' | 'image' | 'file' {
   return 'file';
 }
 
+const LINK_RE = /(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g;
+
+/** Gmail auto-links URLs and emails inside plain-text bodies. */
+function Linkified({ text }: { text: string }) {
+  const parts = text.split(LINK_RE);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (/^(https?:\/\/|www\.)/.test(part)) {
+          return (
+            <a
+              key={i}
+              className="msg-link"
+              href={part.startsWith('http') ? part : `https://${part}`}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              {part}
+            </a>
+          );
+        }
+        if (/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(part)) {
+          return (
+            <a key={i} className="msg-link" href={`mailto:${part}`}>
+              {part}
+            </a>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+}
+
 /** Full-screen reading view, Gmail 2025/26 (M3 Expressive) style. */
 export function EmailDetail({
   email,
@@ -61,6 +95,7 @@ export function EmailDetail({
   const [addrOpen, setAddrOpen] = useState(false);
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyText, setReplyText] = useState('');
+  const [quoteOpen, setQuoteOpen] = useState(false);
   const scrollRef = useRef<HTMLElement>(null);
   const navHidden = useScrollHide(scrollRef);
 
@@ -77,8 +112,11 @@ export function EmailDetail({
   const activeIndex = expandedIndex === -1 ? thread.length - 1 : expandedIndex;
   const collapsed = thread.filter((_, i) => i !== activeIndex).slice(0, activeIndex);
   // Expanded message: chosen one (or last).
-  const active: ThreadMessage = thread[activeIndex];  const openName = active.fromName || (email.folder === 'sent' ? ACCOUNT.name : email.fromName);
-  const avatarColor = active.avatarBg || email.avatarColor || ACCOUNT_COLOR;
+  const active: ThreadMessage = thread[activeIndex];
+  const openName = active.fromName || (email.folder === 'sent' ? ACCOUNT.name : email.fromName);
+  // Message avatars use the generated palette per sender (Gmail varies colours
+  // per participant); only the account itself falls back to its brand colour.
+  const avatarColor = active.avatarBg || (active.fromName ? undefined : ACCOUNT_COLOR);
   const toLine = email.folder === 'sent' ? `to ${email.toName}` : 'to me';
   const dateStamp = active.date || email.fullDate || '';
   const parsedDate = parseStamp(dateStamp);
@@ -90,6 +128,11 @@ export function EmailDetail({
   // "Reply all" only when the thread has more than one distinct participant.
   const participants = new Set(thread.map((m) => m.fromEmail || m.fromName));
   const showReplyAll = participants.size > 1 || (email.folder === 'sent' && thread.length > 1);
+
+  const body = active.body || '';
+  const { visible, quoted } = useMemo(() => splitQuotedBody(body), [body]);
+  const visibleParas = useMemo(() => toParagraphs(visible), [visible]);
+  const quotedParas = useMemo(() => toParagraphs(quoted), [quoted]);
 
   const sendInlineReply = () => {
     setReplyOpen(false);
@@ -171,16 +214,17 @@ export function EmailDetail({
               onClick={() => {
                 setExpandedIndex(threadIndex);
                 setReplyOpen(false);
+                setQuoteOpen(false);
                 scrollRef.current?.scrollTo({ top: 0 });
               }}
               aria-label={`Expand message from ${m.fromName}`}
             >
-              <ProfileAvatar name={m.fromName} color={m.avatarBg || email.avatarColor} size={34} />
+              <ProfileAvatar name={m.fromName} color={m.avatarBg} size={34} />
               <div className="thread-mini__body">
                 <span className="thread-mini__name">{m.fromName}</span>
                 <span className="thread-mini__preview">{m.body ? m.body.slice(0, 160) : m.date}</span>
               </div>
-              <span className="thread-mini__date">{m.date ? m.date.split(' at ')[0].replace(/, .*$/, '') : ''}</span>
+              <span className="thread-mini__date">{compactStamp(m.date)}</span>
             </button>
           );
         })}
@@ -256,9 +300,30 @@ export function EmailDetail({
           )}
 
           <div className="message-body">
-            {(active.body || '').split(/\n{2,}/).map((para, i) => (
-              <p key={i}>{para}</p>
+            {visibleParas.map((para, i) => (
+              <p key={i}>
+                <Linkified text={para} />
+              </p>
             ))}
+            {quotedParas.length > 0 &&
+              (quoteOpen ? (
+                <div className="message-quote">
+                  {quotedParas.map((para, i) => (
+                    <p key={i}>
+                      <Linkified text={para} />
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="quote-toggle ripplable"
+                  aria-label="Show trimmed content"
+                  onClick={() => setQuoteOpen(true)}
+                >
+                  <MaterialIcon name="more_horiz" size={20} />
+                </button>
+              ))}
           </div>
         </div>
       </main>
