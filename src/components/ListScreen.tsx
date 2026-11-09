@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import type { Email, Folder } from '../types/email';
 import { AppBar } from './AppBar';
@@ -8,6 +8,7 @@ import { CategoryTabs } from './CategoryTabs';
 import { BottomNav } from './BottomNav';
 import { useScrollHide, useRestoredScroll } from '../hooks/lists';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { parseStamp } from '../utils/format';
 import { MaterialIcon } from './MaterialIcon';
 
 interface ListScreenProps {
@@ -65,12 +66,21 @@ export function ListScreen({
 
   const showTabs = view === 'inbox' && !starred;
 
-  const visible = emails.filter((e) => {
-    if (starred) return e.folder === 'inbox' && e.starred;
-    if (e.folder !== folder) return false;
-    if (folder === 'sent') return true;
-    return category === 'primary' ? e.category === 'primary' : e.category === category;
-  });
+  const visible = emails
+    .filter((e) => {
+      if (starred) return e.folder === 'inbox' && e.starred;
+      if (e.folder !== folder) return false;
+      if (folder === 'sent') return true;
+      return category === 'primary' ? e.category === 'primary' : e.category === category;
+    })
+    .sort((a, b) => {
+      const da = parseStamp(a.fullDate)?.getTime() ?? 0;
+      const db = parseStamp(b.fullDate)?.getTime() ?? 0;
+      return db - da; // newest first, like Gmail (stable for unparseable stamps)
+    });
+
+  // Switching tabs cancels a pending refresh indicator.
+  useEffect(() => setRefreshing(false), [category, starred, folder]);
 
   // ---- Selection mode ----
   const [selectionMode, setSelectionMode] = useState(false);
@@ -172,7 +182,7 @@ export function ListScreen({
         onPointerCancel={pullEnd}
       >
         <div className={`ptr${refreshing ? ' ptr--active' : ''}`} role="progressbar" aria-label="Refreshing">
-          <MaterialIcon name="progress_circle_activity" filled />
+          <span className="ptr__ring" />
         </div>
 
         <EmailList

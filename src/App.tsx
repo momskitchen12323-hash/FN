@@ -85,8 +85,17 @@ function EmailDetailScreen({
 
 export default function App() {
   const [emails, setEmails] = useState<Email[]>(INITIAL_EMAILS);
-  const [drafts, setDrafts] = useState<Draft[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drafts, setDrafts] = useState<Draft[]>(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('gm-drafts') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  useEffect(() => {
+    sessionStorage.setItem('gm-drafts', JSON.stringify(drafts));
+  }, [drafts]);
   const [toast, setToast] = useState<{
     message: string;
     action?: { label: string; run: () => void };
@@ -175,18 +184,6 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [drawerOpen]);
-
-  // Browser/Android back closes the drawer before leaving the page.
-  useEffect(() => {
-    if (!drawerOpen) return;
-    const onPop = () => setDrawerOpen(false);
-    window.history.pushState({ gmDrawer: true }, '');
-    window.addEventListener('popstate', onPop);
-    return () => {
-      window.removeEventListener('popstate', onPop);
-      if (window.history.state && window.history.state.gmDrawer) window.history.back();
-    };
   }, [drawerOpen]);
 
   const inboxUnread = emails.filter((e) => e.folder === 'inbox' && e.unread).length;
@@ -283,7 +280,29 @@ export default function App() {
               drafts={drafts}
               onClose={closeToLastList}
               onStatic={showToast}
-              onSaveDraft={(draft) => upsertDraft(draft)}
+              onSaveDraft={(draft) => {
+                upsertDraft(draft);
+                showToast('Message saved as draft.');
+              }}
+              onSend={(draft) => {
+                if (drafts.some((d) => d.id === draft.id)) removeDraft(draft.id);
+                showToast('Message sent.');
+                closeToLastList();
+              }}
+            />
+          }
+        />
+        <Route
+          path="/compose/:draftId"
+          element={
+            <ComposeRoute
+              drafts={drafts}
+              onClose={closeToLastList}
+              onStatic={showToast}
+              onSaveDraft={(draft) => {
+                upsertDraft(draft);
+                showToast('Message saved as draft.');
+              }}
               onSend={(draft) => {
                 if (drafts.some((d) => d.id === draft.id)) removeDraft(draft.id);
                 showToast('Message sent.');

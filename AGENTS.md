@@ -21,8 +21,8 @@ account owner's own browser session. Consequences:
 - Keep the app phone-shaped (`.app-frame`, max-width 480px). No desktop layout.
 - Threads render Gmail-style: active message expanded, older messages as
   collapsed arabic-number mini rows; stars are per-thread and fully clickable.
-- Fonts (Roboto + Material Symbols Rounded) live in `public/fonts/`
-  (@font-face in their local CSS). No network dependency for type. Every
-  icon-only button has an a11y label; touch targets ≥ 44×44.
+- Fonts (Roboto, **Google Sans**, **Google Sans Text**, Material Symbols Rounded)
+  live in `public/fonts/` (@font-face in their local CSS). No network dependency
+  for type. Every icon-only button has an a11y label; touch targets ≥ 44×44.
 - Primary accent stays `#1A73E8`; verify at 360 / 390 / 412 widths with zero
   horizontal page scroll after any layout change.
