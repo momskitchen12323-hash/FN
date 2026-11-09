@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MaterialIcon } from './MaterialIcon';
+import { ACCOUNT } from '../data/emails';
 
 interface ComposeScreenProps {
   onClose: () => void;
@@ -8,9 +9,10 @@ interface ComposeScreenProps {
 }
 
 /**
- * Full-screen Gmail Android Compose view. Fields are editable, Cc/Bcc rows can
- * be revealed, and the bottom toolbar mirrors Gmail's attachment/formatting
- * affordances. Nothing is transmitted anywhere.
+ * Full-screen Gmail Android Compose view (M3 Expressive): no title, a tinted
+ * top bar with back / attach / filled send / overflow, hairline-separated
+ * field rows and the bare body editor. Fields are editable; Cc/Bcc rows can be
+ * revealed. Nothing is transmitted anywhere.
  */
 export function ComposeScreen({ onClose, onSend }: ComposeScreenProps) {
   const [to, setTo] = useState('');
@@ -27,17 +29,32 @@ export function ComposeScreen({ onClose, onSend }: ComposeScreenProps) {
     <div className="compose">
       <header className="compose-topbar">
         <button type="button" className="icon-btn" aria-label="Close compose" onClick={onClose}>
-          <MaterialIcon name="close" className="icon-secondary" />
+          <MaterialIcon name="arrow_back" />
         </button>
-        <h1 className="compose-title">Compose</h1>
         <div className="compose-topbar__spacer" />
+        <button type="button" className="icon-btn" aria-label="Attach file">
+          <MaterialIcon name="attach_file" />
+        </button>
         <button type="button" className="icon-btn" aria-label="Send" onClick={send}>
-          <MaterialIcon name="send" className="icon-secondary" />
+          <MaterialIcon name="send" filled className="icon-ink" />
+        </button>
+        <button type="button" className="icon-btn" aria-label="More compose options">
+          <MaterialIcon name="more_vert" />
         </button>
       </header>
 
-      <div className="compose-scroll no-scrollbar">
-        <div className="compose-field-row">
+      <div className="compose-fields no-scrollbar">
+        <div className="compose-row">
+          <span className="compose-label" id="from-label">
+            From
+          </span>
+          <span className="compose-from">
+            {ACCOUNT.email}
+            <MaterialIcon name="expand_more" size={18} />
+          </span>
+        </div>
+
+        <div className="compose-row">
           <span className="compose-label" id="to-label">
             To
           </span>
@@ -55,13 +72,13 @@ export function ComposeScreen({ onClose, onSend }: ComposeScreenProps) {
               aria-label="Show Cc and Bcc fields"
               onClick={() => setShowCc(true)}
             >
-              Cc Bcc
+              Cc/Bcc
             </button>
           )}
         </div>
 
         {showCc && (
-          <div className="compose-field-row">
+          <div className="compose-row">
             <span className="compose-label" id="cc-label">
               Cc
             </span>
@@ -88,7 +105,7 @@ export function ComposeScreen({ onClose, onSend }: ComposeScreenProps) {
         )}
 
         {showBcc && (
-          <div className="compose-field-row">
+          <div className="compose-row">
             <span className="compose-label" id="bcc-label">
               Bcc
             </span>
@@ -114,7 +131,7 @@ export function ComposeScreen({ onClose, onSend }: ComposeScreenProps) {
           </div>
         )}
 
-        <div className="compose-field-row">
+        <div className="compose-row">
           <input
             className="compose-input"
             aria-label="Subject"
@@ -131,25 +148,6 @@ export function ComposeScreen({ onClose, onSend }: ComposeScreenProps) {
           value={body}
           onChange={(e) => setBody(e.target.value)}
         />
-      </div>
-
-      <div className="compose-bottom">
-        <button type="button" className="icon-btn" aria-label="Attach file">
-          <MaterialIcon name="attach_file" size={22} className="icon-secondary" />
-        </button>
-        <button type="button" className="icon-btn" aria-label="Insert photo">
-          <MaterialIcon name="image" size={22} className="icon-secondary" />
-        </button>
-        <button type="button" className="icon-btn" aria-label="Insert link">
-          <MaterialIcon name="link" size={22} className="icon-secondary" />
-        </button>
-        <button type="button" className="icon-btn" aria-label="Formatting options">
-          <MaterialIcon name="format_color_text" size={22} className="icon-secondary" />
-        </button>
-        <div className="compose-bottom__spacer" />
-        <button type="button" className="icon-btn" aria-label="More compose options">
-          <MaterialIcon name="more_vert" size={22} className="icon-secondary" />
-        </button>
       </div>
     </div>
   );

@@ -42,9 +42,12 @@ function EmailDetailScreen({ emails, toggleStar, markRead, markUnread, removeEma
 
   if (!email) return <Navigate to="/" replace />;
 
+  const inboxUnread = emails.filter((e) => e.folder === 'inbox' && e.unread).length;
+
   return (
     <EmailDetail
       email={email}
+      inboxUnread={inboxUnread}
       onBack={goBack}
       onToggleStar={toggleStar}
       onArchive={(target) => {
@@ -120,6 +123,13 @@ export default function App() {
     return location.pathname === '/sent' ? 'sent' : 'inbox';
   })();
 
+  // Which inbox category is on screen (null on Sent and detail screens of Sent mail).
+  const currentCategory = (() => {
+    if (location.pathname === '/sent') return null;
+    const tab = new URLSearchParams(location.search).get('tab');
+    return tab === 'promotions' || tab === 'social' || tab === 'updates' ? tab : 'primary';
+  })();
+
   return (
     <div className="app-frame">
       <Routes>
@@ -187,6 +197,7 @@ export default function App() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         currentFolder={currentFolder}
+        currentCategory={currentCategory}
         unreadCount={unreadCount}
         onNavigateFolder={(folder) => {
           setDrawerOpen(false);

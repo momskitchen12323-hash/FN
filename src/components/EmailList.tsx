@@ -15,7 +15,7 @@ export function EmailList({ folder, emails, onOpen, onToggleStar }: EmailListPro
   if (emails.length === 0) {
     return (
       <div className="list-empty" role="status">
-        <MaterialIcon name={EMPTY_ICON[folder]} size={72} />
+        <MaterialIcon name={EMPTY_ICON[folder]} size={64} />
         <p>Nothing here yet</p>
       </div>
     );
@@ -27,7 +27,7 @@ export function EmailList({ folder, emails, onOpen, onToggleStar }: EmailListPro
         <li key={email.id}>
           <EmailRow
             email={email}
-            displayName={folder === 'sent' ? email.toName : email.fromName}
+            displayName={folder === 'sent' ? `To: ${email.toName || 'Me'}` : email.fromName}
             onOpen={() => onOpen(email.id)}
             onToggleStar={() => onToggleStar(email.id)}
           />

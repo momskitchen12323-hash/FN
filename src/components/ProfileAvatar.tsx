@@ -2,36 +2,64 @@ import type { CSSProperties } from 'react';
 
 interface AvatarProps {
   name: string;
+  /** Explicit background override (e.g. the account avatar). */
   color?: string;
   size?: number;
   className?: string;
   style?: CSSProperties;
 }
 
-function initialsFor(name: string): string {
-  const honorific = /^(dr|mr|mrs|ms|prof)$/i;
-  const parts = name
-    .replace(/[^\p{L}\p{N} ]/gu, '')
-    .trim()
-    .split(/\s+/)
-    .filter((p) => p && p !== '&' && !honorific.test(p));
-  if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
+/** Gmail's generated avatar palette (varied, deterministic). */
+const AVATAR_COLORS = [
+  '#ea8600',
+  '#188038',
+  '#1a73e8',
+  '#8430ce',
+  '#c5221f',
+  '#00897b',
+  '#d01884',
+  '#f9ab00',
+  '#795548',
+  '#3949ab',
+  '#00838f',
+  '#689f38',
+];
+
+function hashOf(name: string): number {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+function firstLetter(name: string): string {
+  const clean = name
+    .replace(/^to:\s*/i, '')
+    .replace(/^me\b[,:]?\s*/i, '')
+    .replace(/<[^>]*>/g, '')
+    .trim();
+  const m = clean.match(/[\p{L}\p{N}]/u);
+  return m ? m[0].toUpperCase() : '?';
 }
 
 /**
- * Circular letter avatar with a deterministic background color, used for the
- * account (top bar, drawer) and every sender/recipient in the lists.
+ * Circular letter avatar matching Gmail's generated avatars: one strong letter,
+ * white on a deterministic coloured circle.
  */
-export function ProfileAvatar({ name, color = '#7B1FA2', size = 40, className = '', style }: AvatarProps) {
+export function ProfileAvatar({ name, color, size = 40, className = '', style }: AvatarProps) {
+  const deterministic = AVATAR_COLORS[hashOf(name) % AVATAR_COLORS.length];
   return (
     <div
       className={`avatar${className ? ` ${className}` : ''}`}
-      style={{ width: size, height: size, background: color, fontSize: Math.round(size * 0.42), ...style }}
+      style={{
+        width: size,
+        height: size,
+        background: color || deterministic,
+        fontSize: Math.round(size * 0.44),
+        ...style,
+      }}
       aria-hidden="true"
     >
-      {initialsFor(name)}
+      {firstLetter(name)}
     </div>
   );
 }

@@ -1,14 +1,13 @@
-import { MaterialIcon } from './MaterialIcon';
+import { GeminiIcon } from './GeminiIcon';
 
-/**
- * Static, non-functional search affordance that matches Gmail's pill-shaped
- * search field in the top app bar.
- */
+/** Gmail 2026 search pill: white, centred placeholder, Gemini sparkle at right. */
 export function SearchPill() {
   return (
     <div className="search-pill" role="search" aria-label="Search in mail">
-      <MaterialIcon name="search" size={22} className="icon-secondary" />
       <span className="search-pill__text">Search in mail</span>
+      <span className="search-pill__gemini">
+        <GeminiIcon size={22} />
+      </span>
     </div>
   );
 }
