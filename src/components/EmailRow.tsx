@@ -1,6 +1,7 @@
 import type { Email } from '../types/email';
 import { ProfileAvatar } from './ProfileAvatar';
 import { MaterialIcon } from './MaterialIcon';
+import { rowDate } from '../utils/format';
 
 interface EmailRowProps {
   email: Email;
@@ -8,6 +9,13 @@ interface EmailRowProps {
   displayName: string;
   onOpen: () => void;
   onToggleStar: () => void;
+  /** Optional folder chip rendered after the subject (search results). */
+  chipLabel?: string;
+  selection?: {
+    mode: boolean;
+    selected: boolean;
+    onToggle: () => void;
+  };
 }
 
 const IMAGE_EXT = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'heic']);
@@ -20,27 +28,26 @@ function chipIcon(name?: string): string {
   return 'attach_file';
 }
 
-/** Compact row date; blanks out placeholder dashes and shortens verbose stamps. */
-function rowDate(email: Email): string {
-  const raw = (email.date || email.fullDate || '').trim();
-  if (!raw || raw === '\u2014' || raw === '\u2013' || raw === '-') return '';
-  const m = raw.match(/(\d{1,2}) ([A-Za-z]+) (\d{4})/);
-  if (!m) return raw.split(',')[0];
-  const short = `${m[1]} ${m[2].slice(0, 3)}`;
-  return m[3] === String(new Date().getFullYear()) ? short : `${short} ${m[3]}`;
-}
-
 /**
- * Gmail 2026 list row:
- *   [avatar] sender ........ date
- *            subject        star
- *            snippet
- *            attachment chips
+ * Gmail M3 Expressive list row:
+ *   [avatar|✓] sender (N) ...... date
+ *              subject [chip]   star
+ *              snippet
+ *              attachment chips
  */
-export function EmailRow({ email, displayName, onOpen, onToggleStar }: EmailRowProps) {
+export function EmailRow({
+  email,
+  displayName,
+  onOpen,
+  onToggleStar,
+  chipLabel,
+  selection,
+}: EmailRowProps) {
   const chips = email.attachments || [];
   const visibleChips = chips.slice(0, 2);
   const extra = chips.length - visibleChips.length;
+  const threadCount = email.messages.length > 1 ? ` (${email.messages.length})` : '';
+  const selecting = selection?.mode ?? false;
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -53,15 +60,36 @@ export function EmailRow({ email, displayName, onOpen, onToggleStar }: EmailRowP
     <div
       role="button"
       tabIndex={0}
-      className={`email-row${email.unread ? ' email-row--unread' : ''}`}
+      className={`email-row ripplable${email.unread ? ' email-row--unread' : ''}`}
       onClick={onOpen}
       onKeyDown={onKeyDown}
       aria-label={`${email.unread ? 'Unread' : 'Read'} email from ${displayName}: ${email.subject}`}
     >
-      <ProfileAvatar name={displayName} size={40} style={{ marginTop: 1 }} />
+      {selecting ? (
+        <button
+          type="button"
+          className={`sel-check${selection?.selected ? ' sel-check--on' : ''}`}
+          aria-label={selection?.selected ? 'Deselect email' : 'Select email'}
+          aria-pressed={selection?.selected}
+          onClick={(e) => {
+            e.stopPropagation();
+            selection?.onToggle();
+          }}
+        >
+          <MaterialIcon name="check" size={20} filled={selection?.selected} />
+        </button>
+      ) : (
+        <ProfileAvatar name={displayName} size={40} style={{ marginTop: 1 }} />
+      )}
       <div className="email-row__body">
-        <span className="email-row__sender">{displayName}</span>
-        <span className="email-row__subject">{email.subject}</span>
+        <span className="email-row__sender">
+          {displayName}
+          {threadCount}
+        </span>
+        <span className="email-row__subject">
+          {email.subject}
+          {chipLabel && <span className="row-chip">{chipLabel}</span>}
+        </span>
         <span className="email-row__snippet">{email.snippet}</span>
         {visibleChips.length > 0 && (
           <div className="email-row__chips">
@@ -79,7 +107,7 @@ export function EmailRow({ email, displayName, onOpen, onToggleStar }: EmailRowP
         <span className="email-row__date">{rowDate(email)}</span>
         <button
           type="button"
-          className={`star-btn${email.starred ? ' star-btn--on' : ''}`}
+          className={`star-btn ripplable${email.starred ? ' star-btn--on' : ''}`}
           aria-label={email.starred ? 'Remove star' : 'Add star'}
           aria-pressed={email.starred}
           onClick={(e) => {

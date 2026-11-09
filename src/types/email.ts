@@ -1,5 +1,8 @@
 export type Folder = 'inbox' | 'sent';
 
+/** Views reachable from the drawer; 'starred' is a filter over mail. */
+export type View = Folder | 'starred' | 'drafts' | 'chat' | 'meet' | 'search';
+
 export type Category = 'primary' | 'promotions' | 'social' | 'updates' | 'none';
 
 export interface Attachment {
@@ -45,4 +48,15 @@ export interface Email {
   unread: boolean;
   starred: boolean;
   avatarColor: string;
+}
+
+/** Locally stored compose draft. */
+export interface Draft {
+  id: string;
+  to: string;
+  cc?: string;
+  bcc?: string;
+  subject: string;
+  body: string;
+  savedAt: number;
 }
