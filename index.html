@@ -10,17 +10,84 @@
     />
     <title>Gmail</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="/fonts/material-symbols-rounded.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/fonts/roboto.css" />
     <link rel="stylesheet" href="/fonts/google-sans.css" />
     <link rel="stylesheet" href="/fonts/google-sans-text.css" />
     <link rel="stylesheet" href="/fonts/material-symbols.css" />
     <script>
-      // Never render raw ligature words if the icon font somehow fails to load.
-      document.fonts.ready.then(() => {
-        if (!document.fonts.check("24px 'Material Symbols Rounded'")) {
-          document.documentElement.classList.add('fonts-missing');
+      /*
+       * Icon-font guard against raw ligature words ("menu", "star", ...).
+       * The class hides .msr glyphs while the icon font is being verified.
+       * On slow mobile connections the font can still be downloading at
+       * first paint, so we keep re-checking and un-hide as soon as it is
+       * usable; if it genuinely never loads, we give up after 6s and let
+       * the ligature words render (controls stay visible and usable).
+       */
+      (function () {
+        var html = document.documentElement;
+        var verified = false;
+        var giveUpAt = Date.now() + 6000;
+
+        function iconFontWorks() {
+          try {
+            if (document.fonts.check("24px 'Material Symbols Rounded'", 'menu')) return true;
+          } catch (e) {}
+          if (!document.body) return false;
+          var probe = document.createElement('span');
+          probe.setAttribute('aria-hidden', 'true');
+          probe.style.cssText =
+            "position:absolute;left:-9999px;top:0;font-size:24px;font-family:'Material Symbols Rounded',serif";
+          probe.textContent = 'menu';
+          document.body.appendChild(probe);
+          var iconWidth = probe.getBoundingClientRect().width;
+          probe.style.fontFamily = 'serif';
+          var wordWidth = probe.getBoundingClientRect().width;
+          probe.remove();
+          // One ligature glyph is far narrower than the four-letter word.
+          return iconWidth > 8 && iconWidth < wordWidth * 0.6;
         }
-      });
+
+        function verify() {
+          if (verified) return;
+          if (iconFontWorks()) {
+            verified = true;
+            html.classList.remove('fonts-missing');
+          }
+        }
+
+        function loop() {
+          if (verified) return;
+          verify();
+          if (verified) return;
+          if (Date.now() > giveUpAt) {
+            html.classList.remove('fonts-missing');
+            return;
+          }
+          window.setTimeout(loop, 250);
+        }
+
+        html.classList.add('fonts-missing');
+        var start = function () {
+          loop();
+          if (document.fonts) {
+            document.fonts.ready.then(verify);
+            if (document.fonts.addEventListener) {
+              document.fonts.addEventListener('loadingdone', verify);
+            }
+          }
+          window.addEventListener('load', verify);
+        };
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', start);
+        } else {
+          start();
+        }
+        // Safety: never leave controls with permanently hidden glyphs.
+        window.setTimeout(function () {
+          if (!verified) html.classList.remove('fonts-missing');
+        }, 8000);
+      })();
     </script>
   </head>
   <body>
