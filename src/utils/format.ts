@@ -5,15 +5,17 @@ const MONTHS: Record<string, number> = {
   jul: 7, aug: 8, sep: 9, sept: 9, oct: 10, nov: 11, dec: 12,
 };
 
-/** Parses the snapshot date stamps: "11 Oct 2026, 21:13", "19 August 2026 at 08:35". */
+/** Parses snapshot stamps with or without a year: "11 Oct 2026, 21:13", "19 August 2026 at 08:35", "7 Jul", "2 Sept". */
 export function parseStamp(stamp?: string): Date | null {
   if (!stamp) return null;
-  const m = stamp.match(/(\d{1,2}) ([A-Za-z]{3,9}) (\d{4})(?:[,\s]+(?:at\s+)?(\d{1,2}):(\d{2}))?/);
+  const m = stamp.match(/(\d{1,2}) ([A-Za-z]{3,9})(?:,? (\d{4}))?(?:[,\s]+(?:at\s+)?(\d{1,2}):(\d{2}))?/);
   if (!m) return null;
   const month = MONTHS[m[2].toLowerCase().slice(0, 3)];
   if (!month) return null;
+  // Year-less stamps ("7 Jul") belong to the current mail year.
+  const year = m[3] ? Number(m[3]) : new Date().getFullYear();
   const d = new Date(
-    Number(m[3]),
+    year,
     month - 1,
     Number(m[1]),
     m[4] ? Number(m[4]) : 0,

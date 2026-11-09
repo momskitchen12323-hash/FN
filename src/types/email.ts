@@ -15,6 +15,9 @@ export interface Attachment {
 export interface ThreadMessage {
   fromName: string;
   fromEmail?: string;
+  /** Recipient for the expanded "to …" line ("me" for received mail). */
+  toName?: string;
+  toEmail?: string;
   date?: string;
   body?: string;
   attachments?: Attachment[];

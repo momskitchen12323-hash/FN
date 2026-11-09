@@ -45,6 +45,13 @@ function attachmentKind(name: string): 'pdf' | 'image' | 'file' {
   return 'file';
 }
 
+/** One-line thread preview; quoted history is excluded like Gmail. */
+function threadPreview(body: string): string {
+  const { visible } = splitQuotedBody(body);
+  const line = visible.trim().split('\n').find((l) => l.trim()) || '';
+  return line.slice(0, 160);
+}
+
 const LINK_RE = /(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g;
 
 /** Soft photographic placeholders for image attachments (bytes aren't in the snapshot). */
@@ -124,19 +131,28 @@ export function EmailDetail({
       }];
 
   const activeIndex = expandedIndex === -1 ? thread.length - 1 : expandedIndex;
-  const collapsed = thread.filter((_, i) => i !== activeIndex).slice(0, activeIndex);
+  const before = thread.slice(0, activeIndex);
+  const after = thread.slice(activeIndex + 1);
   // Expanded message: chosen one (or last).
   const active: ThreadMessage = thread[activeIndex];
   const openName = active.fromName || (email.folder === 'sent' ? ACCOUNT.name : email.fromName);
   // Message avatars use the generated palette per sender (Gmail varies colours
   // per participant); only the account itself falls back to its brand colour.
   const avatarColor = active.avatarBg || (active.fromName ? undefined : ACCOUNT_COLOR);
-  const toLine = email.folder === 'sent' ? `to ${email.toName}` : 'to me';
+  const toLine = active.toName
+    ? `to ${active.toName}`
+    : email.folder === 'sent'
+      ? `to ${email.toName}`
+      : 'to me';
   const dateStamp = active.date || email.fullDate || '';
   const parsedDate = parseStamp(dateStamp);
   const dateLine = parsedDate ? longAgo(parsedDate) : dateStamp.replace(/,/, ',');
   const attachments =
-    active.attachments && active.attachments.length > 0 ? active.attachments : email.attachments || [];
+    thread.length > 1
+      ? active.attachments || []
+      : active.attachments && active.attachments.length > 0
+        ? active.attachments
+        : email.attachments || [];
   const folderLabel = email.folder === 'sent' ? 'Sent' : FOLDER_LABEL[email.category];
   const showUnsubscribe = email.category === 'promotions';
   // "Reply all" only when the thread has more than one distinct participant.
@@ -153,6 +169,28 @@ export function EmailDetail({
     setReplyText('');
     onStatic('Demo only — nothing was sent');
   };
+
+  const renderMini = (m: ThreadMessage, idx: number) => (
+    <button
+      key={idx}
+      type="button"
+      className="thread-mini ripplable"
+      onClick={() => {
+        setExpandedIndex(idx);
+        setReplyOpen(false);
+        setQuoteOpen(false);
+        scrollRef.current?.scrollTo({ top: 0 });
+      }}
+      aria-label={`Expand message from ${m.fromName}`}
+    >
+      <ProfileAvatar name={m.fromName} color={m.avatarBg} size={34} />
+      <div className="thread-mini__body">
+        <span className="thread-mini__name">{m.fromName}</span>
+        <span className="thread-mini__preview">{m.body ? threadPreview(m.body) : m.date}</span>
+      </div>
+      <span className="thread-mini__date">{compactStamp(m.date)}</span>
+    </button>
+  );
 
   return (
     <div className="screen detail">
@@ -218,30 +256,7 @@ export function EmailDetail({
           </button>
         </div>
 
-        {collapsed.map((m, i) => {
-          const threadIndex = i;
-          return (
-            <button
-              key={threadIndex}
-              type="button"
-              className="thread-mini ripplable"
-              onClick={() => {
-                setExpandedIndex(threadIndex);
-                setReplyOpen(false);
-                setQuoteOpen(false);
-                scrollRef.current?.scrollTo({ top: 0 });
-              }}
-              aria-label={`Expand message from ${m.fromName}`}
-            >
-              <ProfileAvatar name={m.fromName} color={m.avatarBg} size={34} />
-              <div className="thread-mini__body">
-                <span className="thread-mini__name">{m.fromName}</span>
-                <span className="thread-mini__preview">{m.body ? m.body.slice(0, 160) : m.date}</span>
-              </div>
-              <span className="thread-mini__date">{compactStamp(m.date)}</span>
-            </button>
-          );
-        })}
+        {before.map((m, i) => renderMini(m, i))}
         <div className="message-card">
           <div className="message-head">
             <ProfileAvatar name={openName} color={avatarColor} size={40} />
@@ -280,11 +295,16 @@ export function EmailDetail({
               </button>
               <div className="addr-pop__row">
                 <span className="addr-pop__label">From:</span>
-                <span className="addr-pop__value">{email.folder === 'sent' ? ACCOUNT.email : active.fromEmail || openName}</span>
+                <span className="addr-pop__value">
+                  {active.fromEmail || (email.folder === 'sent' ? ACCOUNT.email : openName)}
+                </span>
               </div>
               <div className="addr-pop__row">
                 <span className="addr-pop__label">To:</span>
-                <span className="addr-pop__value">{email.folder === 'sent' ? email.toEmail || email.toName : ACCOUNT.email}</span>
+                <span className="addr-pop__value">
+                  {active.toEmail ||
+                    (email.folder === 'sent' ? email.toEmail || email.toName : ACCOUNT.email)}
+                </span>
               </div>
               <div className="addr-pop__row">
                 <span className="addr-pop__label">Date:</span>
@@ -368,6 +388,7 @@ export function EmailDetail({
               ))}
           </div>
         </div>
+        {after.map((m, i) => renderMini(m, activeIndex + 1 + i))}
       </main>
 
       {replyOpen ? (
