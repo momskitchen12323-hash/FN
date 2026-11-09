@@ -47,6 +47,20 @@ function attachmentKind(name: string): 'pdf' | 'image' | 'file' {
 
 const LINK_RE = /(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g;
 
+/** Soft photographic placeholders for image attachments (bytes aren't in the snapshot). */
+const IMAGE_GRADIENTS = [
+  'linear-gradient(135deg, #cfe3f7 0%, #e8f0fb 55%, #f7f9fc 100%)',
+  'linear-gradient(135deg, #f5e3cf 0%, #faf0e4 60%, #f8f9fb 100%)',
+  'linear-gradient(135deg, #d5ead9 0%, #ecf5ee 60%, #f8faf9 100%)',
+  'linear-gradient(135deg, #e3d8f3 0%, #f1ecf9 60%, #f9f8fc 100%)',
+];
+
+function imageGradient(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return IMAGE_GRADIENTS[h % IMAGE_GRADIENTS.length];
+}
+
 /** Gmail auto-links URLs and emails inside plain-text bodies. */
 function Linkified({ text }: { text: string }) {
   const parts = text.split(LINK_RE);
@@ -283,17 +297,45 @@ export function EmailDetail({
             <div className="message-attachments" aria-label={`${attachments.length} attachments`}>
               {attachments.map((a, i) => {
                 const kind = attachmentKind(a.name);
+                if (kind === 'image') {
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      className="att-image ripplable"
+                      aria-label={`Open attachment ${a.name}`}
+                      onClick={() => onStatic(`Open ${a.name} — demo only`)}
+                    >
+                      <span
+                        className="att-image__preview"
+                        style={{ background: imageGradient(a.name) }}
+                        aria-hidden="true"
+                      >
+                        <MaterialIcon name="image" size={24} />
+                      </span>
+                      <span className="att-image__meta">
+                        <span className="att-image__name" title={a.name}>{a.name}</span>
+                        {a.size && <span className="att-image__size">{a.size}</span>}
+                      </span>
+                    </button>
+                  );
+                }
                 return (
-                  <div key={i} className="att-card">
-                    <span className={`att-card__thumb${kind === 'pdf' ? ' att-card__thumb--pdf' : ''}${kind === 'image' ? ' att-card__thumb--img' : ''}`}>
-                      <MaterialIcon
-                        name={kind === 'pdf' ? 'picture_as_pdf' : kind === 'image' ? 'image' : 'draft'}
-                        size={20}
-                      />
+                  <button
+                    key={i}
+                    type="button"
+                    className="att-file ripplable"
+                    aria-label={`Open attachment ${a.name}`}
+                    onClick={() => onStatic(`Open ${a.name} — demo only`)}
+                  >
+                    <span className={`att-file__thumb att-file__thumb--${kind}`}>
+                      <MaterialIcon name={kind === 'pdf' ? 'picture_as_pdf' : 'draft'} size={24} />
                     </span>
-                    <span className="att-card__name" title={a.name}>{a.name}</span>
-                    {a.size && <span className="att-card__size">{a.size}</span>}
-                  </div>
+                    <span className="att-file__meta">
+                      <span className="att-file__name" title={a.name}>{a.name}</span>
+                      <span className="att-file__size">{a.size || (kind === 'pdf' ? 'PDF' : 'File')}</span>
+                    </span>
+                  </button>
                 );
               })}
             </div>
